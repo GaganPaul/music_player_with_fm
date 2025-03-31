@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.media.MediaPlayer
@@ -26,16 +27,22 @@ import android.widget.SearchView
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.example.musicplayer.database.AppDatabase
+import com.example.musicplayer.database.LikedSong
 import java.io.FileNotFoundException
 import java.io.IOException
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
@@ -93,9 +100,12 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        songsAdapter = SongsAdapter(emptyList()) { song ->
-            playSong(song)
-        }
+        songsAdapter = SongsAdapter(
+            emptyList(),
+            { song -> playSong(song) },
+            { song, isLiked -> handleLikeSong(song, isLiked) },
+            { song -> handleDeleteSong(song) }
+        )
         recyclerView.adapter = songsAdapter
 
         recyclerView.scrollToPosition(30) // Scroll to the beginning of the list
@@ -180,8 +190,39 @@ class MainActivity : AppCompatActivity() {
         val playlist_button = findViewById<Button>(R.id.playlist_button)
         val Playing_Song_Cardview = findViewById<CardView>(R.id.Playing_Song_Cardview)
         val heading = findViewById<TextView>(R.id.heading)
+        val playerBackButton = findViewById<Button>(R.id.playerBackButton)
+        val playerCloseButton = findViewById<Button>(R.id.playerCloseButton)
+        val profileButton = findViewById<Button>(R.id.profileButton)
+        val backButton = findViewById<Button>(R.id.backButton)
+        val searchView: SearchView = findViewById(R.id.searchView)
 
         var isPlaylistVisible = true
+
+        // Handle main back button click
+        backButton.setOnClickListener {
+            // Check if we're in search mode or if we should exit
+            if (!searchView.isIconified) {
+                searchView.setQuery("", false)
+                searchView.isIconified = true
+            } else {
+                // Check if user is logged in
+                val sharedPreferences = getSharedPreferences("music_player_prefs", Context.MODE_PRIVATE)
+                val userId = sharedPreferences.getInt("user_id", -1)
+                
+                if (userId != -1) {
+                    // Show confirmation dialog before exiting
+                    val builder = AlertDialog.Builder(this)
+                    builder.setTitle("Exit App")
+                    builder.setMessage("Do you want to exit the app?")
+                    builder.setPositiveButton("Yes") { _, _ -> finish() }
+                    builder.setNegativeButton("No", null)
+                    builder.show()
+                } else {
+                    // Not logged in, go to login
+                    startActivity(Intent(this, LoginActivity::class.java))
+                }
+            }
+        }
 
         playlist_button.setOnClickListener {
             if (isPlaylistVisible) {
@@ -191,32 +232,55 @@ class MainActivity : AppCompatActivity() {
                 heading.setText("Now Playing")
                 visualizerView.visibility = View.VISIBLE
                 controlPanel.visibility = View.VISIBLE
-
-
+                isPlaylistVisible = false
             } else {
                 Playing_Song_Cardview.visibility = View.GONE
                 recyclerView.visibility = View.VISIBLE
                 playlist_button.setBackgroundResource(R.drawable.playing_button)
                 heading.setText("All Songs")
                 visualizerView.visibility = View.GONE
-                controlPanel.visibility = View.VISIBLE
-
-
+                isPlaylistVisible = true
             }
-            isPlaylistVisible = !isPlaylistVisible
+        }
+        
+        // Handle player back button click
+        playerBackButton.setOnClickListener {
+            // Always return to song list view regardless of current state
+            Playing_Song_Cardview.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+            playlist_button.setBackgroundResource(R.drawable.playing_button)
+            heading.setText("All Songs")
+            visualizerView.visibility = View.GONE
+            isPlaylistVisible = true
+        }
+        
+        // Handle player close button click
+        playerCloseButton.setOnClickListener {
+            // Always return to song list view regardless of current state
+            Playing_Song_Cardview.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+            playlist_button.setBackgroundResource(R.drawable.playing_button)
+            heading.setText("All Songs")
+            visualizerView.visibility = View.GONE
+            isPlaylistVisible = true
+        }
+        
+        // Handle profile button click
+        profileButton.setOnClickListener {
+            // Check if user is logged in
+            val sharedPreferences = getSharedPreferences("music_player_prefs", Context.MODE_PRIVATE)
+            val userId = sharedPreferences.getInt("user_id", -1)
+            
+            if (userId != -1) {
+                // User is logged in, go to profile
+                startActivity(Intent(this, UserProfileActivity::class.java))
+            } else {
+                // User not logged in, go to login
+                startActivity(Intent(this, LoginActivity::class.java))
+            }
         }
 
-
-
-
-
-
-
-
         val searchButton: Button = findViewById(R.id.search_button)
-        val searchView: SearchView = findViewById(R.id.searchView)
-        val Playing_Song_Cardview2: CardView = findViewById(R.id.Playing_Song_Cardview)
-
         searchView.visibility = View.GONE
 
         searchButton.setOnClickListener {
@@ -231,7 +295,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 searchView.visibility = View.VISIBLE
                 recyclerView.visibility = View.VISIBLE
-                Playing_Song_Cardview2.visibility = View.GONE
+                Playing_Song_Cardview.visibility = View.GONE
                 controlPanel.visibility = View.GONE
 
                 // Focus on the SearchView
@@ -325,10 +389,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         songsList.reverse()
-        songsAdapter = SongsAdapter(songsList) { song ->
+        songsAdapter = SongsAdapter(songsList, { song ->
             currentSongIndex = songsList.indexOf(song)
             playSong(song)
-        }
+        }, { song, isLiked -> handleLikeSong(song, isLiked) }, { song -> handleDeleteSong(song) })
         recyclerView.adapter = songsAdapter
         recyclerView.scrollToPosition(0) // Scroll to the beginning of the list
     }
@@ -644,12 +708,22 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mediaPlayer.release()
-        notificationManager.cancel(NOTIFICATION_ID)
-        val visualizerView: CustomVisualizerView = findViewById(R.id.visualizerView)
-        visualizerView.releaseVisualizer()
-        if (wakeLock.isHeld) {
-            wakeLock.release()
+        try {
+            if (::mediaPlayer.isInitialized) {
+                if (mediaPlayer.isPlaying) {
+                    mediaPlayer.stop()
+                }
+                mediaPlayer.release()
+            }
+            if (::visualizerView.isInitialized) {
+                visualizerView.releaseVisualizer()
+            }
+            if (::wakeLock.isInitialized && wakeLock.isHeld) {
+                wakeLock.release()
+            }
+        } catch (e: Exception) {
+            // Log the error but don't crash
+            e.printStackTrace()
         }
     }
 
@@ -670,6 +744,137 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
+        }
+    }
+
+    private fun handleLikeSong(song: Song, isLiked: Boolean) {
+        // Get current user ID
+        val sharedPreferences = getSharedPreferences("music_player_prefs", Context.MODE_PRIVATE)
+        val userId = sharedPreferences.getInt("user_id", -1)
+
+        if (userId == -1) {
+            // User not logged in, prompt to login
+            Toast.makeText(this, "Please login to like songs", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, LoginActivity::class.java))
+            return
+        }
+
+        lifecycleScope.launch {
+            val database = AppDatabase.getDatabase(this@MainActivity)
+            if (isLiked) {
+                // Add to liked songs
+                val likedSong = LikedSong(
+                    userId = userId,
+                    title = song.title,
+                    artist = song.artist,
+                    path = song.path,
+                    albumArtUri = song.albumArtUri
+                )
+                database.likedSongDao().insertLikedSong(likedSong)
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Added to liked songs", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // Remove from liked songs
+                database.likedSongDao().unlikeSong(userId, song.path)
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Removed from liked songs", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        
+        // Check if songs are loaded
+        if (songsAdapter.getSongs().isNotEmpty()) {
+            // Update liked status for all songs
+            updateLikedSongsStatus()
+        }
+    }
+
+    private fun updateLikedSongsStatus() {
+        // Get current user ID
+        val sharedPreferences = getSharedPreferences("music_player_prefs", Context.MODE_PRIVATE)
+        val userId = sharedPreferences.getInt("user_id", -1)
+
+        if (userId == -1) {
+            return // User not logged in
+        }
+
+        lifecycleScope.launch {
+            val database = AppDatabase.getDatabase(this@MainActivity)
+            val songs = songsAdapter.getSongs()
+            
+            // Check each song if it's liked
+            for (i in songs.indices) {
+                val song = songs[i]
+                val isLiked = database.likedSongDao().isSongLiked(userId, song.path)
+                if (song.isLiked != isLiked) {
+                    song.isLiked = isLiked
+                    val finalIndex = i
+                    runOnUiThread {
+                        songsAdapter.notifyItemChanged(finalIndex)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleDeleteSong(song: Song) {
+        // Show confirmation dialog before deleting
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Delete Song")
+        builder.setMessage("Are you sure you want to remove '${song.title}' from your playlist?")
+        builder.setPositiveButton("Delete") { _, _ ->
+            try {
+                // Remove from playlist
+                val currentSongs = songsAdapter.getSongs().toMutableList()
+                currentSongs.remove(song)
+                songsAdapter.submitList(currentSongs)
+                
+                // If the deleted song is currently playing, play the next song
+                if (song.isPlaying && currentSongs.isNotEmpty()) {
+                    playNextSong()
+                } else if (song.isPlaying && currentSongs.isEmpty()) {
+                    // If there are no more songs, stop playback
+                    if (::mediaPlayer.isInitialized && mediaPlayer.isPlaying) {
+                        mediaPlayer.stop()
+                    }
+                    updateUI(null)
+                }
+                
+                Toast.makeText(this, "Song removed from playlist", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error removing song: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+        builder.setNegativeButton("Cancel", null)
+        builder.show()
+    }
+    
+    private fun updateUI(song: Song?) {
+        // Update UI elements based on current song
+        if (song != null) {
+            findViewById<TextView>(R.id.song_title).text = song.title
+            findViewById<TextView>(R.id.song_artist).text = song.artist
+            
+            // Update album art
+            try {
+                val albumImageView = findViewById<ImageView>(R.id.Playing_Song_Imageview)
+                Glide.with(this)
+                    .load(song.albumArtUri)
+                    .placeholder(R.drawable.audioicon)
+                    .error(R.drawable.audioicon)
+                    .into(albumImageView)
+            } catch (e: Exception) {
+                // Handle image loading error
+            }
+        } else {
+            // No song playing
+            findViewById<TextView>(R.id.song_title).text = "No Song Playing"
+            findViewById<TextView>(R.id.song_artist).text = ""
         }
     }
 

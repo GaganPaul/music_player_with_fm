@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:gravity="center_vertical">
 
     <!-- You can replace this ImageView with an actual album image view -->
     <ImageView
@@ -22,9 +23,11 @@
         <TextView
             android:id="@+id/titleTextView"
             android:layout_width="match_parent"
-            android:layout_height="20sp"
+            android:layout_height="wrap_content"
             android:text="Song Title"
-            android:textSize="18sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -32,8 +35,27 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Artist Name"
-            android:textSize="16sp" />
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="14sp" />
 
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/likeButton"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginEnd="8dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/btn_star_big_off"
+        android:contentDescription="Like song" />
+
+    <ImageButton
+        android:id="@+id/moreButton"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_more"
+        android:contentDescription="More options" />
 
 </LinearLayout>

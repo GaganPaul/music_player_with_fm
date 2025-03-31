@@ -1,80 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:padding="16dp"
     android:background="@color/white"
-    tools:context=".MainActivity">
+    android:padding="16dp"
+    tools:context=".LikedSongsActivity">
 
     <LinearLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="10dp">
+        android:gravity="center_vertical">
 
         <Button
             android:id="@+id/backButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="@android:drawable/ic_menu_revert"
-            android:visibility="visible"
             android:contentDescription="Back" />
 
         <TextView
-            android:text="All Songs"
-            android:id="@+id/heading"
-            android:textSize="24sp"
+            android:id="@+id/likedSongsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:textStyle="bold"
+            android:text="Liked Songs"
             android:textColor="@color/black"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:id="@+id/profileButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginEnd="16dp"
-            android:background="@android:drawable/ic_menu_myplaces" />
-
-        <Button
-            android:id="@+id/playlist_button"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/playlist" />
-
-        <Button
-            android:id="@+id/search_button"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:background="@drawable/search_icon" />
+            android:textSize="24sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <SearchView
-        android:id="@+id/searchView"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:iconifiedByDefault="true"
-        android:queryHint="Search Songs"
-        android:background="#000000"
-        android:layout_below="@id/headerLayout" />
-
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_marginTop="10dp"
-        android:layout_below="@id/searchView"
+        android:id="@+id/likedSongsRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/headerLayout"
         android:layout_above="@id/controlPanel"
+        android:layout_marginTop="16dp"
         android:clipToPadding="false"
-        android:layout_marginBottom="25sp"
         android:scrollbars="vertical" />
+
+    <TextView
+        android:id="@+id/emptyStateTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:text="You haven't liked any songs yet"
+        android:textColor="@color/black"
+        android:textSize="18sp"
+        android:visibility="gone" />
 
     <androidx.cardview.widget.CardView
         android:id="@+id/Playing_Song_Cardview"
@@ -84,7 +62,7 @@
         app:cardElevation="10dp"
         android:background="#00FFFFFF"
         android:layout_centerHorizontal="true"
-        android:layout_below="@id/searchView"
+        android:layout_below="@id/headerLayout"
         android:layout_marginTop="20dp"
         android:layout_marginStart="20dp"
         android:layout_marginEnd="20dp"
@@ -202,13 +180,6 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/reapet_button"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="16dp"
-                android:background="@drawable/repeat" />
-
-            <Button
                 android:id="@+id/previousButton"
                 android:layout_marginEnd="16dp"
                 android:layout_width="40dp"
@@ -224,23 +195,9 @@
 
             <Button
                 android:id="@+id/nextButton"
-                android:layout_marginEnd="16dp"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="@drawable/next" />
-
-            <Button
-                android:id="@+id/shuffleButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/shuffle_off" />
         </LinearLayout>
-
-        <com.example.musicplayer.CustomVisualizerView
-            android:id="@+id/visualizerView"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginBottom="10dp"
-            android:visibility="gone" />
     </LinearLayout>
 </RelativeLayout>
