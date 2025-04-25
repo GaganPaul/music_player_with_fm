@@ -122,12 +122,6 @@ class LikedSongsActivity : AppCompatActivity() {
             showSongsList()
         }
 
-        // Set up player close button
-        val playerCloseButton: Button = findViewById(R.id.playerCloseButton)
-        playerCloseButton.setOnClickListener {
-            showSongsList()
-        }
-
         // Set up media player listeners
         mediaPlayer.setOnPreparedListener {
             it.start()

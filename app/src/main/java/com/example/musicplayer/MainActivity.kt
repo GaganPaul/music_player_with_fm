@@ -197,7 +197,6 @@ class MainActivity : AppCompatActivity() {
         val Playing_Song_Cardview = findViewById<CardView>(R.id.Playing_Song_Cardview)
         val heading = findViewById<TextView>(R.id.heading)
         val playerBackButton = findViewById<Button>(R.id.playerBackButton)
-        val playerCloseButton = findViewById<Button>(R.id.playerCloseButton)
         val profileButton = findViewById<Button>(R.id.profileButton)
         val backButton = findViewById<Button>(R.id.backButton)
         val searchView: SearchView = findViewById(R.id.searchView)
@@ -251,17 +250,6 @@ class MainActivity : AppCompatActivity() {
 
         // Handle player back button click
         playerBackButton.setOnClickListener {
-            // Always return to song list view regardless of current state
-            Playing_Song_Cardview.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
-            playlist_button.setBackgroundResource(R.drawable.playing_button)
-            heading.setText("All Songs")
-            visualizerView.visibility = View.GONE
-            isPlaylistVisible = true
-        }
-
-        // Handle player close button click
-        playerCloseButton.setOnClickListener {
             // Always return to song list view regardless of current state
             Playing_Song_Cardview.visibility = View.GONE
             recyclerView.visibility = View.VISIBLE

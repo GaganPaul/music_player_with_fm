@@ -54,7 +54,7 @@
             android:layout_height="48dp"
             android:layout_marginEnd="8dp"
             android:backgroundTint="#0A2472"
-            android:text="profile"
+            android:text="Profile"
             android:textColor="#FFFFFF"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/heading" />
@@ -118,15 +118,6 @@
                 android:layout_margin="8dp"
                 android:background="@android:drawable/ic_menu_revert"
                 android:contentDescription="Back" />
-
-            <Button
-                android:id="@+id/playerCloseButton"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_margin="8dp"
-                android:layout_alignParentEnd="true"
-                android:background="@android:drawable/ic_menu_close_clear_cancel"
-                android:contentDescription="Close" />
 
             <ImageView
                 android:id="@+id/Playing_Song_Imageview"
