@@ -179,25 +179,49 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/previousButton"
-                android:layout_marginEnd="16dp"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/previous" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:gravity="center"
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/pauseResumeButton"
-                android:layout_marginEnd="16dp"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/play" />
+                <Button
+                    android:id="@+id/reapet_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/repeat" />
 
-            <Button
-                android:id="@+id/nextButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/next" />
+                <Button
+                    android:id="@+id/previousButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/previous" />
+
+                <Button
+                    android:id="@+id/pauseResumeButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/play" />
+
+                <Button
+                    android:id="@+id/nextButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@drawable/next" />
+
+                <Button
+                    android:id="@+id/shuffleButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/shuffle_off" />
+            </LinearLayout>
+
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>

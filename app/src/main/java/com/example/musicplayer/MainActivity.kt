@@ -110,6 +110,12 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView.scrollToPosition(30) // Scroll to the beginning of the list
 
+        // Setup radio button
+        val radioButton: Button = findViewById(R.id.radioButton)
+        radioButton.setOnClickListener {
+            val intent = Intent(this, RadioActivity::class.java)
+            startActivity(intent)
+        }
 
         seekBar = findViewById(R.id.seekBar)
         setupSeekBarListener()
@@ -208,7 +214,7 @@ class MainActivity : AppCompatActivity() {
                 // Check if user is logged in
                 val sharedPreferences = getSharedPreferences("music_player_prefs", Context.MODE_PRIVATE)
                 val userId = sharedPreferences.getInt("user_id", -1)
-                
+
                 if (userId != -1) {
                     // Show confirmation dialog before exiting
                     val builder = AlertDialog.Builder(this)
@@ -242,7 +248,7 @@ class MainActivity : AppCompatActivity() {
                 isPlaylistVisible = true
             }
         }
-        
+
         // Handle player back button click
         playerBackButton.setOnClickListener {
             // Always return to song list view regardless of current state
@@ -253,7 +259,7 @@ class MainActivity : AppCompatActivity() {
             visualizerView.visibility = View.GONE
             isPlaylistVisible = true
         }
-        
+
         // Handle player close button click
         playerCloseButton.setOnClickListener {
             // Always return to song list view regardless of current state
@@ -264,13 +270,13 @@ class MainActivity : AppCompatActivity() {
             visualizerView.visibility = View.GONE
             isPlaylistVisible = true
         }
-        
+
         // Handle profile button click
         profileButton.setOnClickListener {
             // Check if user is logged in
             val sharedPreferences = getSharedPreferences("music_player_prefs", Context.MODE_PRIVATE)
             val userId = sharedPreferences.getInt("user_id", -1)
-            
+
             if (userId != -1) {
                 // User is logged in, go to profile
                 startActivity(Intent(this, UserProfileActivity::class.java))
@@ -786,7 +792,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        
+
         // Check if songs are loaded
         if (songsAdapter.getSongs().isNotEmpty()) {
             // Update liked status for all songs
@@ -806,7 +812,7 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val database = AppDatabase.getDatabase(this@MainActivity)
             val songs = songsAdapter.getSongs()
-            
+
             // Check each song if it's liked
             for (i in songs.indices) {
                 val song = songs[i]
@@ -833,7 +839,7 @@ class MainActivity : AppCompatActivity() {
                 val currentSongs = songsAdapter.getSongs().toMutableList()
                 currentSongs.remove(song)
                 songsAdapter.submitList(currentSongs)
-                
+
                 // If the deleted song is currently playing, play the next song
                 if (song.isPlaying && currentSongs.isNotEmpty()) {
                     playNextSong()
@@ -844,7 +850,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     updateUI(null)
                 }
-                
+
                 Toast.makeText(this, "Song removed from playlist", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Error removing song: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -853,13 +859,13 @@ class MainActivity : AppCompatActivity() {
         builder.setNegativeButton("Cancel", null)
         builder.show()
     }
-    
+
     private fun updateUI(song: Song?) {
         // Update UI elements based on current song
         if (song != null) {
             findViewById<TextView>(R.id.song_title).text = song.title
             findViewById<TextView>(R.id.song_artist).text = song.artist
-            
+
             // Update album art
             try {
                 val albumImageView = findViewById<ImageView>(R.id.Playing_Song_Imageview)

@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
@@ -30,7 +31,7 @@ class LikedSongsActivity : AppCompatActivity() {
     private lateinit var songsAdapter: SongsAdapter
     private lateinit var database: AppDatabase
     private var userId: Int = -1
-    
+
     // Media playback components
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var seekBar: SeekBar
@@ -48,11 +49,11 @@ class LikedSongsActivity : AppCompatActivity() {
 
         // Initialize database
         database = AppDatabase.getDatabase(this)
-        
+
         // Initialize media player
         mediaPlayer = MediaPlayer()
         handler = Handler(Looper.getMainLooper())
-        
+
         // Initialize UI components
         seekBar = findViewById(R.id.seekBar)
         setupSeekBarListener()
@@ -75,7 +76,7 @@ class LikedSongsActivity : AppCompatActivity() {
         // Initialize adapter with empty list
         songsAdapter = SongsAdapter(
             emptyList(),
-            { song -> 
+            { song ->
                 // Handle song click - Play the song directly
                 playSong(song)
             },
@@ -98,35 +99,35 @@ class LikedSongsActivity : AppCompatActivity() {
         backButton.setOnClickListener {
             finish()
         }
-        
+
         // Set up player controls
         val pauseResumeButton: Button = findViewById(R.id.pauseResumeButton)
         pauseResumeButton.setOnClickListener {
             togglePlayback()
         }
-        
+
         val previousButton: Button = findViewById(R.id.previousButton)
         previousButton.setOnClickListener {
             playPreviousSong()
         }
-        
+
         val nextButton: Button = findViewById(R.id.nextButton)
         nextButton.setOnClickListener {
             playNextSong()
         }
-        
+
         // Set up player back button
         val playerBackButton: Button = findViewById(R.id.playerBackButton)
         playerBackButton.setOnClickListener {
             showSongsList()
         }
-        
+
         // Set up player close button
         val playerCloseButton: Button = findViewById(R.id.playerCloseButton)
         playerCloseButton.setOnClickListener {
             showSongsList()
         }
-        
+
         // Set up media player listeners
         mediaPlayer.setOnPreparedListener {
             it.start()
@@ -134,47 +135,71 @@ class LikedSongsActivity : AppCompatActivity() {
             updateSeekBar()
             updatePlayPauseButton()
         }
-        
+
         mediaPlayer.setOnCompletionListener {
             playNextSong()
         }
     }
-    
+
     private fun showSongsList() {
         findViewById<CardView>(R.id.Playing_Song_Cardview).visibility = View.GONE
         recyclerView.visibility = View.VISIBLE
     }
-    
+
     private fun showNowPlaying() {
         findViewById<CardView>(R.id.Playing_Song_Cardview).visibility = View.VISIBLE
         recyclerView.visibility = View.GONE
     }
 
     private fun loadLikedSongs() {
+        // Show loading state
+        findViewById<TextView>(R.id.emptyStateTextView).text = "Loading liked songs..."
+        findViewById<TextView>(R.id.emptyStateTextView).visibility = View.VISIBLE
+        
         lifecycleScope.launch {
-            val dbLikedSongs = database.likedSongDao().getLikedSongsByUser(userId)
-            
-            // Convert LikedSong entities to Song objects
-            likedSongs = dbLikedSongs.map { likedSong ->
-                Song(
-                    title = likedSong.title,
-                    artist = likedSong.artist,
-                    path = likedSong.path,
-                    albumArtUri = likedSong.albumArtUri,
-                    isPlaying = false,
-                    isLiked = true
-                )
-            }
-            
-            // Update UI on main thread
-            runOnUiThread {
-                if (likedSongs.isEmpty()) {
+            try {
+                val dbLikedSongs = database.likedSongDao().getLikedSongsByUser(userId)
+                
+                // Log for debugging
+                Log.d("LikedSongsActivity", "Loaded ${dbLikedSongs.size} liked songs for user $userId")
+                
+                // Convert LikedSong entities to Song objects
+                likedSongs = dbLikedSongs.map { likedSong ->
+                    Song(
+                        title = likedSong.title,
+                        artist = likedSong.artist,
+                        path = likedSong.path,
+                        albumArtUri = likedSong.albumArtUri,
+                        isPlaying = false,
+                        isLiked = true
+                    )
+                }
+
+                // Update UI on main thread
+                runOnUiThread {
+                    if (likedSongs.isEmpty()) {
+                        findViewById<TextView>(R.id.emptyStateTextView).text = "You haven't liked any songs yet"
+                        findViewById<TextView>(R.id.emptyStateTextView).visibility = View.VISIBLE
+                        recyclerView.visibility = View.GONE
+                    } else {
+                        findViewById<TextView>(R.id.emptyStateTextView).visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
+                        songsAdapter.submitList(likedSongs)
+                        
+                        // Log for debugging
+                        Log.d("LikedSongsActivity", "Updated adapter with ${likedSongs.size} songs")
+                    }
+                }
+            } catch (e: Exception) {
+                // Log the error
+                Log.e("LikedSongsActivity", "Error loading liked songs: ${e.message}", e)
+                
+                // Show error message to user
+                runOnUiThread {
+                    findViewById<TextView>(R.id.emptyStateTextView).text = "Error loading liked songs. Please try again."
                     findViewById<TextView>(R.id.emptyStateTextView).visibility = View.VISIBLE
                     recyclerView.visibility = View.GONE
-                } else {
-                    findViewById<TextView>(R.id.emptyStateTextView).visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
-                    songsAdapter.submitList(likedSongs)
+                    Toast.makeText(this@LikedSongsActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -182,12 +207,33 @@ class LikedSongsActivity : AppCompatActivity() {
 
     private fun handleLikeButtonClick(song: Song, isLiked: Boolean) {
         lifecycleScope.launch {
-            if (!isLiked) {
-                // Remove from liked songs
-                database.likedSongDao().unlikeSong(userId, song.path)
-                
-                // Refresh the list
-                loadLikedSongs()
+            try {
+                if (!isLiked) {
+                    // Remove from liked songs
+                    database.likedSongDao().unlikeSong(userId, song.path)
+                    Log.d("LikedSongsActivity", "Unliked song: ${song.title}")
+                    
+                    // Show feedback
+                    runOnUiThread {
+                        Toast.makeText(
+                            this@LikedSongsActivity,
+                            "Removed from liked songs",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    // Refresh the list
+                    loadLikedSongs()
+                }
+            } catch (e: Exception) {
+                Log.e("LikedSongsActivity", "Error handling like button: ${e.message}", e)
+                runOnUiThread {
+                    Toast.makeText(
+                        this@LikedSongsActivity,
+                        "Error updating liked status: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }
@@ -199,27 +245,33 @@ class LikedSongsActivity : AppCompatActivity() {
         builder.setMessage("Are you sure you want to remove '${song.title}' from your liked songs?")
         builder.setPositiveButton("Remove") { _, _ ->
             lifecycleScope.launch {
-                // Remove from liked songs in database
-                val userId = getSharedPreferences("music_player_prefs", Context.MODE_PRIVATE)
-                    .getInt("user_id", -1)
-                
-                if (userId != -1) {
-                    // Unlike the song in database
+                try {
+                    // Remove from liked songs in database
                     database.likedSongDao().unlikeSong(userId, song.path)
-                    
+                    Log.d("LikedSongsActivity", "Deleted song from liked songs: ${song.title}")
+
                     // If the deleted song is currently playing, play the next song
-                    if (currentSongIndex >= 0 && currentSongIndex < likedSongs.size && 
+                    if (currentSongIndex >= 0 && currentSongIndex < likedSongs.size &&
                         likedSongs[currentSongIndex].path == song.path) {
                         playNextSong()
                     }
-                    
+
                     // Refresh the list
                     loadLikedSongs()
-                    
+
                     runOnUiThread {
                         Toast.makeText(
                             this@LikedSongsActivity,
                             "Song removed from liked songs",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("LikedSongsActivity", "Error deleting song: ${e.message}", e)
+                    runOnUiThread {
+                        Toast.makeText(
+                            this@LikedSongsActivity,
+                            "Error removing song: ${e.message}",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -229,7 +281,7 @@ class LikedSongsActivity : AppCompatActivity() {
         builder.setNegativeButton("Cancel", null)
         builder.show()
     }
-    
+
     private fun playSong(song: Song) {
         try {
             // Reset previous playing state
@@ -237,23 +289,23 @@ class LikedSongsActivity : AppCompatActivity() {
                 likedSongs[currentSongIndex].isPlaying = false
                 songsAdapter.notifyItemChanged(currentSongIndex)
             }
-            
+
             // Set new playing state
             currentSongIndex = likedSongs.indexOf(song)
             if (currentSongIndex >= 0) {
                 likedSongs[currentSongIndex].isPlaying = true
                 songsAdapter.notifyItemChanged(currentSongIndex)
             }
-            
+
             // Reset and prepare media player
             mediaPlayer.reset()
             mediaPlayer.setDataSource(song.path)
             mediaPlayer.prepareAsync()
-            
+
             // Update UI
             findViewById<TextView>(R.id.song_title).text = song.title
             findViewById<TextView>(R.id.song_artist).text = song.artist
-            
+
             // Update album art
             val albumImageView = findViewById<ImageView>(R.id.Playing_Song_Imageview)
             Glide.with(this)
@@ -261,39 +313,39 @@ class LikedSongsActivity : AppCompatActivity() {
                 .placeholder(R.drawable.audioicon)
                 .error(R.drawable.audioicon)
                 .into(albumImageView)
-            
+
             // Show now playing view
             showNowPlaying()
-            
+
         } catch (e: IOException) {
             Toast.makeText(this, "Error playing song: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
     private fun playNextSong() {
         if (likedSongs.isEmpty()) return
-        
+
         if (currentSongIndex < 0) {
             currentSongIndex = 0
         } else {
             currentSongIndex = (currentSongIndex + 1) % likedSongs.size
         }
-        
+
         playSong(likedSongs[currentSongIndex])
     }
-    
+
     private fun playPreviousSong() {
         if (likedSongs.isEmpty()) return
-        
+
         if (currentSongIndex <= 0) {
             currentSongIndex = likedSongs.size - 1
         } else {
             currentSongIndex--
         }
-        
+
         playSong(likedSongs[currentSongIndex])
     }
-    
+
     private fun togglePlayback() {
         if (mediaPlayer.isPlaying) {
             mediaPlayer.pause()
@@ -302,7 +354,7 @@ class LikedSongsActivity : AppCompatActivity() {
         }
         updatePlayPauseButton()
     }
-    
+
     private fun updatePlayPauseButton() {
         val pauseResumeButton = findViewById<Button>(R.id.pauseResumeButton)
         if (mediaPlayer.isPlaying) {
@@ -311,48 +363,48 @@ class LikedSongsActivity : AppCompatActivity() {
             pauseResumeButton.setBackgroundResource(R.drawable.play)
         }
     }
-    
+
     private fun updateSeekBar() {
         if (mediaPlayer.isPlaying) {
             seekBar.progress = mediaPlayer.currentPosition
-            
+
             // Update time displays
             val positiveTimer = findViewById<TextView>(R.id.positive_playback_timer)
             val negativeTimer = findViewById<TextView>(R.id.negative_playback_timer)
-            
+
             positiveTimer.text = formatTime(mediaPlayer.currentPosition)
             negativeTimer.text = formatTime(mediaPlayer.duration - mediaPlayer.currentPosition)
-            
+
             // Schedule next update
             handler.postDelayed(this::updateSeekBar, 1000)
         }
     }
-    
+
     private fun setupSeekBarListener() {
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     mediaPlayer.seekTo(progress)
-                    
+
                     // Update time displays
                     val positiveTimer = findViewById<TextView>(R.id.positive_playback_timer)
                     val negativeTimer = findViewById<TextView>(R.id.negative_playback_timer)
-                    
+
                     positiveTimer.text = formatTime(progress)
                     negativeTimer.text = formatTime(mediaPlayer.duration - progress)
                 }
             }
-            
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
                 // Not needed
             }
-            
+
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 // Not needed
             }
         })
     }
-    
+
     private fun formatTime(milliseconds: Int): String {
         val minutes = milliseconds / 1000 / 60
         val seconds = milliseconds / 1000 % 60
@@ -366,7 +418,7 @@ class LikedSongsActivity : AppCompatActivity() {
         }
         return super.onOptionsItemSelected(item)
     }
-    
+
     override fun onDestroy() {
         super.onDestroy()
         try {

@@ -1,5 +1,5 @@
 package com.example.musicplayer
-
+import android.widget.TextView
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -7,10 +7,19 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 
 class WelcomeActivity : AppCompatActivity() {
+    private lateinit var registerTextView: TextView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_welcome)
 
+        // load register text
+        registerTextView = findViewById(R.id.registerTextView)
+        
+        // Set up register text click listener
+        registerTextView.setOnClickListener {
+            startActivity(Intent(this, RegisterActivity::class.java))
+        }
+        
         // Set up Get Started button
         val getStartedButton: Button = findViewById(R.id.getStartedButton)
         getStartedButton.setOnClickListener {

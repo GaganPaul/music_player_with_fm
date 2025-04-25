@@ -49,7 +49,7 @@ class SongsAdapter(
         }
         
         // Set more options button click listener
-        holder.moreButton.setOnClickListener { view ->
+        holder.moreButton?.setOnClickListener { view ->
             val popup = PopupMenu(view.context, view)
             popup.menuInflater.inflate(R.menu.song_options_menu, popup.menu)
             
@@ -87,7 +87,7 @@ class SongsAdapter(
         private val artistTextView: TextView = itemView.findViewById(R.id.artistTextView)
         private val albumImageView: ImageView = itemView.findViewById(R.id.albumImageView)
         val likeButton: ImageButton = itemView.findViewById(R.id.likeButton)
-        val moreButton: ImageButton = itemView.findViewById(R.id.moreButton)
+        val moreButton: ImageButton? = itemView.findViewById(R.id.moreButton)
 
         fun bind(song: Song) {
             titleTextView.text = song.title
